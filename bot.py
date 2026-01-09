@@ -103,7 +103,16 @@ async def add_account(e):
         await conv.send_message("📱 Send Phone Number: \n\n Example : +91×××××××")
         phone = (await conv.get_response()).text.strip()
 
-        client = TelegramClient(StringSession(), API_ID, API_HASH)
+        client = TelegramClient(
+            StringSession(),
+            API_ID,
+            API_HASH,
+            device_model=DEVICE_NAME,
+            system_version=SYSTEM_VERSION,
+            app_version=APP_VERSION,
+            lang_code="en"
+        )
+
         await client.connect()
         await client.send_code_request(phone)
 
@@ -118,10 +127,14 @@ async def add_account(e):
             await client.sign_in(password=pwd)
 
         session = client.session.save()
-        cur.execute("INSERT INTO accounts(owner, phone, session) VALUES(?,?,?)",
-                    (uid, phone, session))
+        cur.execute(
+            "INSERT INTO accounts(owner, phone, session) VALUES(?,?,?)",
+            (uid, phone, session)
+        )
         conn.commit()
+
         await conv.send_message(f"✅ **Account Added** `{phone}`")
+
 
 # ===== REMOVE (TEXT ONLY) =====
 @bot.on(events.NewMessage(pattern="/remove"))
