@@ -268,7 +268,7 @@ async def help_cmd(e):
     "\n────────────────────────"
     "\n• Users are responsible for complying with Telegram policies"
     "\n• Any misuse or abuse may result in access restrictions"
-    "\n\n⚠️ **ADMIN ID **: "
+    "\n\n⚠️ **ADMIN ID **: @BlazeNXT"
     )
 
 bot.run_until_disconnected()
