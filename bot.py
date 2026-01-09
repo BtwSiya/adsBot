@@ -61,8 +61,10 @@ async def start(e):
 @bot.on(events.CallbackQuery)
 async def callbacks(e):
     uid = e.sender_id
-    if not approved(uid):
-        return await e.answer("Not authorised", alert=True)
+
+    if uid != ADMIN_ID:
+        if not approved(uid):
+            return await e.answer("Not authorised", alert=True)
 
     data = e.data.decode()
     await e.answer()
