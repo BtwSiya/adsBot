@@ -237,6 +237,38 @@ async def profile_cmd(e):
 
 # ===== HELP =====
 async def help_cmd(e):
-    await e.reply("Use inline buttons only")
+    await e.reply(
+    "**Ads Automation Bot — Help & Usage Guide**"
+    "\n\n────────────────────────"
+    "\n**ACCOUNT MANAGEMENT**"
+    "\n────────────────────────"
+    "\n• **Add Account**"
+    "\n  Securely connect a new account to the bot."
+    "\n\n• **Account List**"
+    "\n  View all accounts linked to your profile."
+    "\n\n• **Remove Account**"
+    "\n  Remove an account using:"
+    "\n  **/remove <account_number>**"
+    "\n\n────────────────────────"
+    "\n**ADS & CAMPAIGN SETUP**"
+    "\n────────────────────────"
+    "\n• **Set Message**"
+    "\n  Define the advertisement content."
+    "\n\n• **Start Ads**"
+    "\n  Start sending ads to configured targets."
+    "\n\n• **Stop Ads**"
+    "\n  Stop all active ad campaigns instantly."
+    "\n\n────────────────────────"
+    "\n**PROFILE & STATISTICS**"
+    "\n────────────────────────"
+    "\n• **My Profile**"
+    "\n  View your accounts, targets, and usage statistics."
+    "\n\n────────────────────────"
+    "\n**USAGE POLICY**"
+    "\n────────────────────────"
+    "\n• Users are responsible for complying with Telegram policies"
+    "\n• Any misuse or abuse may result in access restrictions"
+    "\n\n⚠️ **ADMIN ID **: "
+    )
 
 bot.run_until_disconnected()
