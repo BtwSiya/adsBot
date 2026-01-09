@@ -31,8 +31,8 @@ def approved(uid):
 
 # ===== BUTTONS =====
 MAIN_BTNS = [
-    [Button.inline("➕ Add Account", b"add"), Button.inline("✏️ Set Message", b"set")],
-    [Button.inline("⏱ Set Delay", b"time"), Button.inline("📋 Accounts", b"list")],
+    [Button.inline("➕ Add Account", b"add"), Button.inline("✏️ Set Ads Message", b"set")],
+    [Button.inline("⏱ Set Delay", b"time"), Button.inline("📋 Accounts lists", b"list")],
     [Button.inline("🚀 Start Ads", b"send"), Button.inline("🛑 Stop Ads", b"stop")],
     [Button.inline("👤 Profile", b"profile"), Button.inline("❓ Help", b"help")]
 ]
@@ -53,7 +53,7 @@ async def start(e):
     await bot.send_file(
         uid,
         "start.jpg",
-        caption="🔥 **Userbot Ready**\n\nUse buttons below 👇",
+        caption="👋 **Welcome to Ads Automation Bot!**\n\nThis bot helps you manage and run ads easily using your connected accounts.\n\n✨ What you can do:\n• Add & manage multiple accounts\n• Set your ads message\n• Start / stop ads anytime\n• Track your profile & stats.\n\n⚠️ Access is restricted.\nOnly approved users can use this bot.\n\n👇 Use the buttons below to get started.",
         buttons=MAIN_BTNS
     )
 
@@ -94,26 +94,26 @@ async def approve_cmd(e):
     cur.execute("INSERT OR IGNORE INTO users(user_id, approved) VALUES(?,1)", (uid,))
     cur.execute("UPDATE users SET approved=1 WHERE user_id=?", (uid,))
     conn.commit()
-    await e.reply("✅ Approved")
+    await e.reply("✅ User Approved")
 
 # ===== ADD ACCOUNT =====
 async def add_account(e):
     uid = e.sender_id
     async with bot.conversation(uid, timeout=300) as conv:
-        await conv.send_message("📱 Phone number:")
+        await conv.send_message("📱 Send Phone Number: \n\n Example : +91×××××××")
         phone = (await conv.get_response()).text.strip()
 
         client = TelegramClient(StringSession(), API_ID, API_HASH)
         await client.connect()
         await client.send_code_request(phone)
 
-        await conv.send_message("🔐 OTP (1 2 3 4 5):")
+        await conv.send_message("🔐 **Send OTP**\n\nAs a Format (1 2 3 4 5):")
         otp = (await conv.get_response()).text.strip()
 
         try:
             await client.sign_in(phone=phone, code=otp)
         except SessionPasswordNeededError:
-            await conv.send_message("🔑 2FA password:")
+            await conv.send_message("🔑 2FA Password Enable\n\nPlease Send Your Password:")
             pwd = (await conv.get_response()).text.strip()
             await client.sign_in(password=pwd)
 
@@ -121,7 +121,7 @@ async def add_account(e):
         cur.execute("INSERT INTO accounts(owner, phone, session) VALUES(?,?,?)",
                     (uid, phone, session))
         conn.commit()
-        await conv.send_message(f"✅ Added `{phone}`")
+        await conv.send_message(f"✅ **Account Added** `{phone}`")
 
 # ===== REMOVE (TEXT ONLY) =====
 @bot.on(events.NewMessage(pattern="/remove"))
@@ -136,17 +136,17 @@ async def remove_account(e):
 
     cur.execute("DELETE FROM accounts WHERE id=?", (rows[idx][0],))
     conn.commit()
-    await e.reply(f"🗑 Removed `{rows[idx][1]}`")
+    await e.reply(f"🗑 **Account Removed** `{rows[idx][1]}`")
 
 # ===== SET MESSAGE =====
 async def set_msg(e):
     uid = e.sender_id
     async with bot.conversation(uid) as conv:
-        await conv.send_message("✏️ Send ad message:")
+        await conv.send_message("✏️ Send ads message:")
         msg = (await conv.get_response()).text
         cur.execute("UPDATE users SET message=? WHERE user_id=?", (msg, uid))
         conn.commit()
-        await conv.send_message("✅ Saved")
+        await conv.send_message("✅ Ads Msg Saved")
 
 # ===== SET TIME (INLINE SAFE) =====
 async def set_time_inline(uid):
@@ -216,7 +216,7 @@ async def stop_ads(e):
     conn.commit()
     task = tasks.pop(uid, None)
     if task: task.cancel()
-    await e.reply("🛑 Stopped")
+    await e.reply("🛑 Ads Stopped")
 
 # ===== PROFILE =====
 async def profile_cmd(e):
