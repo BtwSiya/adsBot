@@ -183,7 +183,7 @@ async def list_acc(e):
     if not rows: return await e.reply("No accounts")
     await e.reply("\n".join(f"{i+1}. {r[0]}" for i, r in enumerate(rows)))
     
-# ===== ADS LOOP (ALL GROUPS FIXED) =====
+# ===== ADS LOOP (ALL GROUPS FIXED + SLEEP SAFE) =====
 async def ads_loop(uid):
     cur.execute("SELECT message, delay FROM users WHERE user_id=?", (uid,))
     row = cur.fetchone()
@@ -211,31 +211,35 @@ async def ads_loop(uid):
 
                     entity = d.entity
 
-                    
                     if d.is_user:
                         continue
 
-                    
                     if d.is_channel and not getattr(entity, "megagroup", False):
                         continue
-
 
                     if not (d.is_group or (d.is_channel and entity.megagroup)):
                         continue
 
                     cur.execute("SELECT running FROM users WHERE user_id=?", (uid,))
                     if cur.fetchone()[0] == 0:
-                        break
+                        return
 
                     try:
                         await c.send_message(d.id, msg)
+
                         cur.execute(
                             "UPDATE users SET sent_count = sent_count + 1 WHERE user_id=?",
                             (uid,)
                         )
                         conn.commit()
-                        await asyncio.sleep(delay)
-                    except Exception as ex:
+
+                        for _ in range(delay):
+                            cur.execute("SELECT running FROM users WHERE user_id=?", (uid,))
+                            if cur.fetchone()[0] == 0:
+                                return
+                            await asyncio.sleep(1)
+
+                    except Exception:
                         pass
 
     finally:
@@ -284,7 +288,8 @@ async def sleep_cmd(e):
     old = sleep_tasks.pop(uid, None)
     if old:
         old.cancel()
-
+    await e.reply("⏳ Previous sleep timer updated.")
+    
     sleep_tasks[uid] = asyncio.create_task(auto_sleep(uid, seconds))
 
     await e.reply(f"😴 Ads will auto-stop at **{time_str} IST**")
