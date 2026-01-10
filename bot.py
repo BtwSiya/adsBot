@@ -25,6 +25,7 @@ bot = TelegramClient(
 ).start(bot_token=BOT_TOKEN)
 
 tasks = {}
+sleep_tasks = {}
 
 # ===== HELPERS =====
 def approved(uid):
@@ -181,6 +182,7 @@ async def list_acc(e):
     rows = cur.fetchall()
     if not rows: return await e.reply("No accounts")
     await e.reply("\n".join(f"{i+1}. {r[0]}" for i, r in enumerate(rows)))
+    
 # ===== ADS LOOP (ALL GROUPS FIXED) =====
 async def ads_loop(uid):
     cur.execute("SELECT message, delay FROM users WHERE user_id=?", (uid,))
@@ -240,7 +242,7 @@ async def ads_loop(uid):
         for c in clients:
             await c.disconnect()
 
-#====== SLEEP =====
+# ===== SLEEP COMMAND =====
 @bot.on(events.NewMessage(pattern="/sleep"))
 async def sleep_cmd(e):
     uid = e.sender_id
@@ -254,7 +256,6 @@ async def sleep_cmd(e):
             "`/sleep 2:30PM`"
         )
 
-    # validate format
     m = re.match(r"^(\d{1,2})(?::(\d{2}))?(AM|PM)$", time_str)
     if not m:
         return await e.reply("❌ Invalid time format")
@@ -280,15 +281,21 @@ async def sleep_cmd(e):
 
     seconds = int((target - now).total_seconds())
 
-    asyncio.create_task(auto_sleep(uid, seconds))
+    old = sleep_tasks.pop(uid, None)
+    if old:
+        old.cancel()
+
+    sleep_tasks[uid] = asyncio.create_task(auto_sleep(uid, seconds))
 
     await e.reply(f"😴 Ads will auto-stop at **{time_str} IST**")
 
-#sleep part
+# ===== AUTO SLEEP TASK =====
 async def auto_sleep(uid, seconds):
-    await asyncio.sleep(seconds)
+    try:
+        await asyncio.sleep(seconds)
+    except asyncio.CancelledError:
+        return
 
-    # stop ads
     cur.execute("UPDATE users SET running=0 WHERE user_id=?", (uid,))
     conn.commit()
 
@@ -300,11 +307,13 @@ async def auto_sleep(uid, seconds):
         uid,
         "🛑 **Auto Sleep Activated**\nAds stopped automatically."
     )
-
-
 # ===== SEND =====
 async def start_ads(e):
     uid = e.sender_id
+    sleep = sleep_tasks.pop(uid, None)
+    if sleep:
+        sleep.cancel()
+
     cur.execute("UPDATE users SET running=1 WHERE user_id=?", (uid,))
     conn.commit()
 
@@ -313,14 +322,20 @@ async def start_ads(e):
 
     tasks[uid] = asyncio.create_task(ads_loop(uid))
     await e.reply("🚀 Ads started")
-
+    
 # ===== STOP =====
 async def stop_ads(e):
     uid = e.sender_id
     cur.execute("UPDATE users SET running=0 WHERE user_id=?", (uid,))
     conn.commit()
     task = tasks.pop(uid, None)
-    if task: task.cancel()
+    if task:
+        task.cancel()
+
+    sleep = sleep_tasks.pop(uid, None)
+    if sleep:
+        sleep.cancel()
+
     await e.reply("🛑 Ads Stopped")
 
 # ===== PROFILE =====
