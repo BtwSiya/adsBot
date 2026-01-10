@@ -320,6 +320,77 @@ async def profile_cmd(e):
         f"😴 **AUTO SLEEP**: {sleep_status}"
     )
 
+# ===== APPROVE USER =====
+@bot.on(events.NewMessage(pattern="/approve"))
+async def approve_cmd(e):
+    if e.sender_id != ADMIN_ID:
+        return
+
+    try:
+        uid = int(e.text.split()[1])
+    except:
+        return await e.reply("Usage: /approve user_id")
+
+    cur.execute("INSERT OR IGNORE INTO users(user_id, approved) VALUES(?,1)", (uid,))
+    cur.execute("UPDATE users SET approved=1 WHERE user_id=?", (uid,))
+    conn.commit()
+
+    await e.reply("✅ User Approved Successfully")
+
+# ===== UNAPPROVE USER =====
+@bot.on(events.NewMessage(pattern="/unapprove"))
+async def unapprove_cmd(e):
+    if e.sender_id != ADMIN_ID:
+        return
+
+    try:
+        uid = int(e.text.split()[1])
+    except:
+        return await e.reply("Usage: /unapprove user_id")
+
+    cur.execute("UPDATE users SET approved=0 WHERE user_id=?", (uid,))
+    cur.execute("UPDATE users SET running=0 WHERE user_id=?", (uid,))
+    conn.commit()
+
+    task = tasks.pop(uid, None)
+    if task:
+        task.cancel()
+
+    sleep = sleep_tasks.pop(uid, None)
+    if sleep:
+        sleep.cancel()
+
+    await e.reply("🚫 User Unapproved Successfully")
+
+# ===== REMOVE ACCOUNT =====
+@bot.on(events.NewMessage(pattern="/remove"))
+async def remove_account(e):
+    uid = e.sender_id
+
+    if not approved(uid) and uid != ADMIN_ID:
+        return await e.reply("⚠️ You are not authorised.")
+
+    try:
+        index = int(e.text.split()[1]) - 1
+    except:
+        return await e.reply("Usage: /remove <account_number>")
+
+    cur.execute("SELECT id, phone FROM accounts WHERE owner=?", (uid,))
+    rows = cur.fetchall()
+
+    if not rows:
+        return await e.reply("❌ No accounts found")
+
+    if index < 0 or index >= len(rows):
+        return await e.reply("❌ Invalid account number")
+
+    acc_id, phone = rows[index]
+
+    cur.execute("DELETE FROM accounts WHERE id=?", (acc_id,))
+    conn.commit()
+
+    await e.reply(f"🗑️ Account Removed: `{phone}`")
+
 # ===== HELP =====
 async def help_cmd(e):
     await e.reply(
