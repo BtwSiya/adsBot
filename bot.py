@@ -345,16 +345,19 @@ async def profile_cmd(e):
 
     cur.execute("SELECT sent_count FROM users WHERE user_id=?", (uid,))
     sent = cur.fetchone()[0]
+
     cur.execute("SELECT COUNT(*) FROM accounts WHERE owner=?", (uid,))
     accs = cur.fetchone()[0]
+
+    sleep_status = "🟢 Active" if uid in sleep_tasks else "❌ Not Set"
 
     await e.reply(
         f"👤 **NAME** : {u.first_name}\n\n"
         f"🆔 **USER ID**: `{uid}`\n\n"
         f"🎗️ **ACCOUNTS**: {accs}\n\n"
-        f"💬 **TOTAL MSG SENT**: {sent}"
+        f"💬 **TOTAL MSG SENT**: {sent}\n\n"
+        f"😴 **AUTO SLEEP**: {sleep_status}"
     )
-
 # ===== HELP =====
 async def help_cmd(e):
     await e.reply(
