@@ -187,7 +187,7 @@ async def set_msg(e):
 # ===== SET DELAY =====
 async def set_time_inline(uid):
     async with bot.conversation(uid) as conv:
-        await conv.send_message("⏱ Delay in seconds:")
+        await conv.send_message("⏱ Delay in seconds:\n\n(minimum 5 sec/delay set in Seconds only)")
         raw = (await conv.get_response()).text.strip()
         t = parse_delay(raw)
         cur.execute("UPDATE users SET delay=? WHERE user_id=?", (t, uid))
@@ -225,13 +225,17 @@ async def list_acc(e):
         return await e.reply("No accounts")
     await e.reply("\n".join(f"{i+1}. {r[0]}" for i, r in enumerate(rows)))
 
-# ===== ADS LOOP (GROUPS) =====
+# ===== ADS LOOP (GROUPS ONLY + AUTO STOP / AUTO ON) =====
 async def ads_loop(uid):
-    cur.execute("SELECT message, delay, auto_stop FROM users WHERE user_id=?", (uid,))
+    cur.execute(
+        "SELECT message, delay, auto_stop, auto_start FROM users WHERE user_id=?",
+        (uid,)
+    )
     row = cur.fetchone()
     if not row:
         return
-    msg, delay, auto_stop = row
+
+    msg, delay, auto_stop, auto_start = row
 
     cur.execute("SELECT session FROM accounts WHERE owner=?", (uid,))
     sessions = cur.fetchall()
@@ -248,32 +252,47 @@ async def ads_loop(uid):
             if cur.fetchone()[0] == 0:
                 break
 
+            now = datetime.now(IST).time()
+
+            # ===== AUTO STOP =====
             if auto_stop:
-                now = datetime.now(IST).time()
                 st = datetime.strptime(auto_stop, "%H:%M").time()
                 if now >= st:
                     cur.execute("UPDATE users SET running=0 WHERE user_id=?", (uid,))
                     conn.commit()
                     break
 
+            # ===== AUTO ON =====
+            if auto_start:
+                at = datetime.strptime(auto_start, "%H:%M").time()
+                if now >= at:
+                    cur.execute("UPDATE users SET running=1 WHERE user_id=?", (uid,))
+                    conn.commit()
+
             for c in clients:
                 async for d in c.iter_dialogs():
                     if not d.is_group:
                         continue
+                    if d.is_channel and not getattr(d.entity, "megagroup", False):
+                        continue
+
+                    cur.execute("SELECT running FROM users WHERE user_id=?", (uid,))
+                    if cur.fetchone()[0] == 0:
+                        break
+
                     try:
                         await c.send_message(d.id, msg)
                         cur.execute(
-                            "UPDATE users SET sent_count=sent_count+1 WHERE user_id=?",
+                            "UPDATE users SET sent_count = sent_count + 1 WHERE user_id=?",
                             (uid,)
                         )
                         conn.commit()
                         await asyncio.sleep(delay)
-                    except:
+                    except Exception:
                         pass
     finally:
         for c in clients:
             await c.disconnect()
-
 # ===== SEND =====
 async def start_ads(e):
     uid = e.sender_id
