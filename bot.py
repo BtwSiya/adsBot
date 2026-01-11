@@ -88,6 +88,7 @@ async def callbacks(e):
     uid = e.sender_id
     data = e.data.decode()
 
+    # 🔒 Access check
     if uid != ADMIN_ID and not approved(uid):
         if data not in ["pay", "paid"]:
             return await e.answer(
@@ -106,50 +107,61 @@ async def callbacks(e):
 
     if data == "add":
         await add_account_cmd(fe)
+
     elif data == "set":
         await set_msg(fe)
+
     elif data == "time":
         await set_time_inline(uid)
+
     elif data == "list":
         await list_acc(fe)
+
     elif data == "send":
         await start_ads(fe)
+
     elif data == "stop":
         await stop_ads(fe)
+
     elif data == "profile":
         await profile_cmd(fe)
+
     elif data == "help":
         await help_cmd(fe)
+
     elif data == "pay":
         await payment_screen(uid)
+
+    elif data == "paid":
+        async with bot.conversation(uid, timeout=300) as conv:
+            await conv.send_message("📸 **Send Payment Screenshot**")
+            ss = await conv.get_response()
+
+            await conv.send_message("🔢 **Send UTR / Transaction ID**")
+            utr = (await conv.get_response()).text
+
+        await bot.send_file(
+            ADMIN_ID,
+            ss,
+            caption=f"💳 **Payment Request**\n\nUser: `{uid}`\nUTR: `{utr}`",
+            buttons=[
+                [Button.inline("✅ Approve", f"aprv_{uid}".encode())],
+                [Button.inline("❌ Reject", f"rej_{uid}".encode())]
+            ]
+        )
+
+        await bot.send_message(uid, "⏳ Payment under review…")
+
     elif data.startswith("aprv_"):
         tuid = int(data.split("_")[1])
         user_update(tuid, {"approved": 1})
         await e.edit("✅ Payment Approved")
         await bot.send_message(tuid, "✅ **Payment Approved! Access Granted**")
+
     elif data.startswith("rej_"):
         tuid = int(data.split("_")[1])
         await e.edit("❌ Payment Rejected")
         await reject_payment(tuid)
-    elif data == "paid":
-    async with bot.conversation(uid, timeout=300) as conv:
-        await conv.send_message("📸 **Send Payment Screenshot**")
-        ss = await conv.get_response()
-
-        await conv.send_message("🔢 **Send UTR / Transaction ID**")
-        utr = (await conv.get_response()).text
-
-    await bot.send_file(
-        ADMIN_ID,
-        ss,
-        caption=f"💳 **Payment Request**\n\nUser: `{uid}`\nUTR: `{utr}`",
-        buttons=[
-            [Button.inline("✅ Approve", f"aprv_{uid}".encode())],
-            [Button.inline("❌ Reject", f"rej_{uid}".encode())]
-        ]
-    )
-
-    await bot.send_message(uid, "⏳ Payment under review…")
 # ===== PAYMENT =====
 async def payment_screen(uid):
     await bot.send_file(
