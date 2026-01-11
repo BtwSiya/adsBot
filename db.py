@@ -1,14 +1,48 @@
 from pymongo import MongoClient
 from config import MONGO_URL
 
-# ===== CONNECT =====
 mongo = MongoClient(MONGO_URL)
-db = mongo.adsbot  
+db = mongo.adsbot
 
-# ===== COLLECTIONS =====
 users = db.users
 accounts = db.accounts
 
-# ===== INDEX (IMPORTANT) =====
-users.create_index("user_id", unique=True)
-accounts.create_index("owner")
+# ===== USERS =====
+def user_insert(uid):
+    users.update_one(
+        {"user_id": uid},
+        {"$setOnInsert": {
+            "approved": 0,
+            "message": "",
+            "delay": 10,
+            "running": 0,
+            "sent_count": 0,
+            "sleep_at": None
+        }},
+        upsert=True
+    )
+
+def user_get(uid):
+    return users.find_one({"user_id": uid})
+
+def user_update(uid, data: dict):
+    users.update_one({"user_id": uid}, {"$set": data})
+
+# ===== ACCOUNTS =====
+def add_account(uid, phone, session):
+    accounts.insert_one({
+        "owner": uid,
+        "phone": phone,
+        "session": session
+    })
+
+def list_accounts(uid):
+    return list(accounts.find({"owner": uid}))
+
+def remove_account(uid, idx):
+    rows = list_accounts(uid)
+    if idx < 0 or idx >= len(rows):
+        return None
+    acc = rows[idx]
+    accounts.delete_one({"_id": acc["_id"]})
+    return acc["phone"]
