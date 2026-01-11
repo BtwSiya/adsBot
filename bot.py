@@ -32,7 +32,7 @@ bot = TelegramClient(
 
 tasks = {}
 sleep_tasks = {}
-
+active_conv = set()
 # ===== HELPERS =====
 def approved(uid):
     cur.execute("SELECT approved FROM users WHERE user_id=?", (uid,))
@@ -89,16 +89,33 @@ async def callbacks(e):
                 return await bot.send_message(uid, *a, **k)
 
         fe = FakeEvent()
+# ❗ block new conversation if one already running
+        if data in ("add", "set", "time") and uid in active_conv:
+           return await bot.send_message(uid, "⚠️ Complete current process first")
 
-        if data == "add": await add_account(fe)
-        elif data == "set": await set_msg(fe)
-        elif data == "time": await set_time_inline(uid)
-        elif data == "list": await list_acc(fe)
-        elif data == "send": await start_ads(fe)
-        elif data == "stop": await stop_ads(fe)
-        elif data == "profile": await profile_cmd(fe)
-        elif data == "help": await help_cmd(fe)
+        if data == "add":
+            await add_account(fe)
+        elif data == "set":
+            await set_msg(fe)
 
+        elif data == "time":
+            await set_time_inline(uid)
+
+elif data == "list":
+    await list_acc(fe)
+
+elif data == "send":
+    await start_ads(fe)
+
+elif data == "stop":
+    await stop_ads(fe)
+
+elif data == "profile":
+    await profile_cmd(fe)
+
+elif data == "help":
+    await help_cmd(fe)
+        
     except Exception as ex:
         print("CALLBACK ERROR:", ex)
 
