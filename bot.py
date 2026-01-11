@@ -20,7 +20,7 @@ IST = pytz.timezone("Asia/Kolkata")
 # ===== DEVICE INFO =====
 DEVICE_NAME = "𝗗𝗲𝘃 —🇮🇳 @iscxm"
 APP_VERSION = "—Dev"
-SYSTEM_VERSION = "Sex Randi Version 2.0 Join — @TechBotss
+SYSTEM_VERSION = "Sex Randi Version 2.0 Join — @TechBotss"
 # ===== BOT =====
 bot = TelegramClient(
     "bot",
@@ -165,7 +165,7 @@ async def callbacks(e):
 async def payment_screen(uid):
     await bot.send_file(
         uid,
-        "start.jpg",
+        "qr.png",
         caption=(
             "💳 **Payment Required**\n\n"
             f"**UPI:** `{UPI_ID}`\n"
@@ -204,7 +204,15 @@ async def add_account_cmd(e):
             await conv.send_message("📱 Send Phone Number: \n\n Example : +91×××××××")
             phone = (await conv.get_response()).text.strip()
 
-            client = TelegramClient(StringSession(), API_ID, API_HASH)
+            client = TelegramClient(
+            StringSession(),
+             API_ID,
+             API_HASH,
+             device_model=DEVICE_NAME,
+             system_version=SYSTEM_VERSION,
+             app_version=APP_VERSION,
+             lang_code="en"
+             )
             await client.connect()
             await client.send_code_request(phone)
 
