@@ -9,8 +9,10 @@ from telethon.sessions import StringSession
 from telethon.errors import SessionPasswordNeededError
 
 from config import *
-from db import cur, conn
-
+from db import (
+    user_insert, user_get, user_update,
+    add_account, list_accounts, remove_account
+)
 # ===== IST =====
 IST = pytz.timezone("Asia/Kolkata")
 
