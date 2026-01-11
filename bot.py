@@ -20,8 +20,7 @@ IST = pytz.timezone("Asia/Kolkata")
 # ===== DEVICE INFO =====
 DEVICE_NAME = "𝗗𝗲𝘃 —🇮🇳 @iscxm"
 APP_VERSION = "—Dev"
-SYSTEM_VERSION = "Sex Randi Version 2.0 Join — @TechBotss"
-UPI_ID = "hh@6"
+SYSTEM_VERSION = "Sex Randi Version 2.0 Join — @TechBotss
 # ===== BOT =====
 bot = TelegramClient(
     "bot",
