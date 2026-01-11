@@ -92,7 +92,7 @@ async def callbacks(e):
     if uid != ADMIN_ID and not approved(uid):
         if data not in ["pay", "paid"]:
             return await e.answer(
-                "⚠️ Access is restricted.\n\nOnly approved users can use this bot.\n\nPlease Contact Admin.\n\nAdmin Username: @BlazeNXT",
+                "⚠️ Access is restricted.\n\nPlease Buy Access.\n\nAdmin Username: @BlazeNXT",
                 alert=True
             )
 
@@ -170,7 +170,7 @@ async def payment_screen(uid):
         caption=(
             "💳 **Payment Required**\n\n"
             f"**UPI:** `{UPI_ID}`\n"
-            "**Amount:** ₹199\n\n"
+            f"**Amount:** ₹{RS}\n\n"
             "Payment ke baad **Paid** dabao 👇"
         ),
         buttons=[[Button.inline("✅ Paid", b"paid")]]
