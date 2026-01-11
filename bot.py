@@ -122,12 +122,21 @@ elif data == "help":
 # ===== ADD ACCOUNT (DEVICE INFO SAME) =====
 async def add_account(e):
     uid = e.sender_id
+
+    # 🔒 conversation lock
+    if uid in active_conv:
+        return
+
+    active_conv.add(uid)
+    client = None
+
     try:
         async with bot.conversation(uid, timeout=300) as conv:
             await conv.send_message("📱 Send Phone Number: \n\n Example : +91×××××××")
             r = await conv.get_response()
             if not r.text:
                 return
+
             phone = r.text.strip()
 
             client = TelegramClient(
@@ -163,6 +172,16 @@ async def add_account(e):
     except TimeoutError:
         await bot.send_message(uid, "⏳ Time out! Try again.")
 
+    except Exception as ex:
+        print("ADD_ACCOUNT ERROR:", ex)
+
+    finally:
+        # 🔓 always release lock
+        active_conv.discard(uid)
+
+        # 🧹 cleanup client
+        if client:
+            await client.disconnect()
 # ===== SET MESSAGE =====
 async def set_msg(e):
     uid = e.sender_id
