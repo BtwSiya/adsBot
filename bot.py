@@ -185,6 +185,11 @@ async def add_account(e):
 # ===== SET MESSAGE =====
 async def set_msg(e):
     uid = e.sender_id
+
+    if uid in active_conv:
+        return
+
+    active_conv.add(uid)
     try:
         async with bot.conversation(uid, timeout=300) as conv:
             await conv.send_message("✏️ Send ads message:")
@@ -192,26 +197,48 @@ async def set_msg(e):
             cur.execute("UPDATE users SET message=? WHERE user_id=?", (msg, uid))
             conn.commit()
             await conv.send_message("✅ Ads Msg Saved")
+
     except TimeoutError:
         await bot.send_message(uid, "⏳ Time out!")
 
+    except Exception as ex:
+        print("SET_MSG ERROR:", ex)
+
+    finally:
+        active_conv.discard(uid)
 # ===== SET TIME =====
 async def set_time_inline(uid):
+    if uid in active_conv:
+        return
+
+    active_conv.add(uid)
     try:
         async with bot.conversation(uid, timeout=120) as conv:
-            await conv.send_message("⏱ Delay in seconds (minimum 10)\n\n**Default 10 sec:**")
+            await conv.send_message(
+                "⏱ Delay in seconds (minimum 10)\n\n**Default 10 sec:**"
+            )
             raw = (await conv.get_response()).text.lower().strip()
             raw = raw.replace("sec", "").replace("seconds", "").strip()
+
             if not raw.isdigit():
                 return
+
             t = int(raw)
             if t < 10:
                 t = 10
+
             cur.execute("UPDATE users SET delay=? WHERE user_id=?", (t, uid))
             conn.commit()
             await conv.send_message(f"✅ Delay set to {t}s")
+
     except TimeoutError:
         await bot.send_message(uid, "⏳ Time out!")
+
+    except Exception as ex:
+        print("SET_TIME ERROR:", ex)
+
+    finally:
+        active_conv.discard(uid)
 
 # ===== LIST =====
 async def list_acc(e):
@@ -241,7 +268,7 @@ async def ads_loop(uid):
 
     try:
         while True:
-            cur.execute("SELECT running FROM users WHERE user_id=?", (uid,))
+            cur.execute("SELECT running FROM users WHERE user_id=?", (uidl,))
             if cur.fetchone()[0] == 0:
                 return
 
